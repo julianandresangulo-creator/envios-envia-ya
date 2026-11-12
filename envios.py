@@ -6,11 +6,12 @@ CONFIG = {
     "RECARGO_NACIONAL": 0.50,
     "DESC_VIP": 0.10,
     "RECARGO_FINDE": 2000,       # en pesos
+    "PMAX": 45,
 }
 
 
 def calc(p, z, c, d, cup=None, flag=False):
-    if p <= 0 or p > 50:
+    if p <= 0 or p > CONFIG["PMAX"]:
         raise ValueError("peso invalido")
     if p <= CONFIG["L1"]:
         t = 6000
