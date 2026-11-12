@@ -1,7 +1,7 @@
 """Cálculo del costo de envíos de EnvíaYa.
 
-Versión 2.0.0. Parámetros de este código estudiantil: ver CHANGELOG.md.
-Orden de cálculo: tarifa base -> recargo de zona -> descuentos (cliente y
+Versión 2.1.0. Parámetros de este código estudiantil: ver CHANGELOG.md.
+Orden de cálculo: tarifa base -> recargo de zona -> hora pico -> descuentos (cliente y
 luego cupón) -> recargo de fin de semana -> mínimo -> redondeo.
 """
 from abc import ABC, abstractmethod
@@ -21,6 +21,11 @@ CUPON_ENVIO10 = "ENVIO10"
 DIA_MINIMO = 1
 DIA_MAXIMO = 7
 DIA_SABADO = 6
+HORA_MINIMA = 0
+HORA_MAXIMA = 23
+HORA_PICO_INICIO = 17
+HORA_PICO_FIN = 19                    # inclusive
+RECARGO_HORA_PICO = Decimal("0.08")
 
 
 # --- Patrón Estrategia: recargo por zona -----------------------------------
@@ -91,13 +96,15 @@ SIN_DESCUENTO = SinDescuento()
 
 
 # --- Funciones auxiliares ---------------------------------------------------
-def _validar_entradas(peso, zona, dia):
+def _validar_entradas(peso, zona, dia, hora=None):
     if peso <= 0 or peso > PESO_MAXIMO_KG:
         raise ValueError("peso invalido")
     if zona not in ZONAS:
         raise ValueError("zona invalida")
     if not DIA_MINIMO <= dia <= DIA_MAXIMO:
         raise ValueError("dia invalido")
+    if hora is not None and not HORA_MINIMA <= hora <= HORA_MAXIMA:
+        raise ValueError("hora invalida")
 
 
 def _tarifa_base(peso):
@@ -106,6 +113,12 @@ def _tarifa_base(peso):
     if peso <= LIMITE_TRAMO_2_KG:
         return TARIFA_TRAMO_2
     return TARIFA_TRAMO_2 + (peso - LIMITE_TRAMO_2_KG) * TARIFA_KG_ADICIONAL
+
+
+def _aplicar_hora_pico(monto, hora):
+    if hora is not None and HORA_PICO_INICIO <= hora <= HORA_PICO_FIN:
+        return monto * (1 + RECARGO_HORA_PICO)
+    return monto
 
 
 def _aplicar_descuentos(monto, cliente, cupon):
@@ -128,10 +141,11 @@ def _redondear(monto):
 
 
 # --- Función pública --------------------------------------------------------
-def calcular_costo(peso, zona, cliente, dia, cupon=None):
+def calcular_costo(peso, zona, cliente, dia, cupon=None, hora=None):
     peso = Decimal(str(peso))
-    _validar_entradas(peso, zona, dia)
+    _validar_entradas(peso, zona, dia, hora)
     monto = ZONAS[zona].aplicar(_tarifa_base(peso))
+    monto = _aplicar_hora_pico(monto, hora)
     monto = _aplicar_descuentos(monto, cliente, cupon)
     monto += _recargo_finde(dia)
     monto = max(monto, COSTO_MINIMO)
