@@ -1,4 +1,6 @@
 # envios.py
+from decimal import Decimal, ROUND_HALF_UP
+
 CONFIG = {
     "L1": 3,
     "L2": 10,
@@ -8,6 +10,11 @@ CONFIG = {
     "RECARGO_FINDE": 2000,       # en pesos
     "PMAX": 45,
 }
+
+
+def redondear_a_cien(t):
+    cien = (Decimal(str(round(t, 6))) / 100).quantize(Decimal(1), rounding=ROUND_HALF_UP)
+    return int(cien) * 100
 
 
 def calc(p, z, c, d, cup=None, flag=False):
@@ -43,4 +50,4 @@ def calc(p, z, c, d, cup=None, flag=False):
         t = 5000
     if flag:
         print("costo:", t)
-    return int(t / 100) * 100
+    return redondear_a_cien(t)
